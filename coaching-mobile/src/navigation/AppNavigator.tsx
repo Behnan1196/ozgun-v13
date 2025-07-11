@@ -1,143 +1,189 @@
-import React from 'react'
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs'
-import { Ionicons } from '@expo/vector-icons'
-import { View, Text, StyleSheet } from 'react-native'
+import React, { useState, useEffect, useRef } from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useAuth } from '../contexts/AuthContext';
+import { CoachStudentProvider, useCoachStudent } from '../contexts/CoachStudentContext';
+import { useStream } from '../contexts/StreamContext';
+import { LoginScreen } from '../screens/LoginScreen';
+import { HomeScreen } from '../screens/HomeScreen';
+import { ChatScreen } from '../screens/ChatScreen';
+import { VideoCallTabScreen } from '../screens/VideoCallTabScreen';
+import { CoachStudentSelectionScreen } from '../screens/CoachStudentSelectionScreen';
 
-import HomeScreen from '../screens/HomeScreen'
-import StudyScreen from '../screens/StudyScreen'
-import ToolsScreen from '../screens/ToolsScreen'
-import ChatScreen from '../screens/ChatScreen'
-import VideoScreen from '../screens/VideoScreen'
+const Tab = createBottomTabNavigator();
 
-const Tab = createBottomTabNavigator()
-const ChatTab = createMaterialTopTabNavigator()
-
-function ChatNavigator() {
-  return (
-    <View style={styles.chatContainer}>
-      <View style={styles.chatHeader}>
-        <Text style={styles.chatHeaderTitle}>İletişim</Text>
-      </View>
-      <ChatTab.Navigator
-        screenOptions={{
-          tabBarActiveTintColor: '#3B82F6',
-          tabBarInactiveTintColor: '#6B7280',
-          tabBarIndicatorStyle: { backgroundColor: '#3B82F6' },
-          tabBarLabelStyle: { fontSize: 14, fontWeight: '600' },
-          tabBarStyle: { backgroundColor: '#FFFFFF' },
-        }}
-      >
-        <ChatTab.Screen 
-          name="Chat" 
-          component={ChatScreen} 
-          options={{ title: 'Mesajlar' }}
-        />
-        <ChatTab.Screen 
-          name="Video" 
-          component={VideoScreen} 
-          options={{ title: 'Video Arama' }}
-        />
-      </ChatTab.Navigator>
-    </View>
-  )
-}
-
-export default function AppNavigator() {
+const MainTabs: React.FC = () => {
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName: keyof typeof Ionicons.glyphMap
-
-          if (route.name === 'Home') {
-            iconName = focused ? 'home' : 'home-outline'
-          } else if (route.name === 'Study') {
-            iconName = focused ? 'calendar' : 'calendar-outline'
-          } else if (route.name === 'ChatNav') {
-            iconName = focused ? 'chatbubbles' : 'chatbubbles-outline'
-          } else if (route.name === 'Tools') {
-            iconName = focused ? 'construct' : 'construct-outline'
-          } else {
-            iconName = 'help-outline'
-          }
-
-          return <Ionicons name={iconName} size={size} color={color} />
-        },
+      screenOptions={{
+        headerShown: false,
         tabBarActiveTintColor: '#3B82F6',
         tabBarInactiveTintColor: '#6B7280',
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: 'white',
           borderTopWidth: 1,
           borderTopColor: '#E5E7EB',
-          paddingTop: 8,
-          paddingBottom: 8,
-          height: 64,
+          paddingBottom: 5,
+          paddingTop: 5,
+          height: 60,
         },
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '600',
         },
-        headerStyle: {
-          backgroundColor: '#3B82F6',
-        },
-        headerTintColor: '#FFFFFF',
-        headerTitleStyle: {
-          fontWeight: 'bold',
-          fontSize: 18,
-        },
-      })}
+      }}
     >
-      <Tab.Screen 
-        name="Home" 
-        component={HomeScreen} 
-        options={{ 
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
           title: 'Ana Sayfa',
-          headerTitle: 'ÖZGÜN Koçluk - Öğrenci Paneli'
-        }} 
+          tabBarIcon: ({ color }) => (
+            <View style={styles.tabIcon}>
+              <View style={[styles.homeIcon, { backgroundColor: color }]} />
+            </View>
+          ),
+        }}
       />
-      <Tab.Screen 
-        name="Study" 
-        component={StudyScreen} 
-        options={{ 
-          title: 'Çalışma Planı',
-          headerTitle: 'Çalışma Planı'
-        }} 
+      <Tab.Screen
+        name="Chat"
+        component={ChatScreen}
+        options={{
+          title: 'Mesaj',
+          tabBarIcon: ({ color }) => (
+            <View style={styles.tabIcon}>
+              <View style={[styles.chatIcon, { backgroundColor: color }]} />
+            </View>
+          ),
+        }}
       />
-      <Tab.Screen 
-        name="ChatNav" 
-        component={ChatNavigator} 
-        options={{ 
-          title: 'Sohbet',
-          headerShown: false
-        }} 
-      />
-      <Tab.Screen 
-        name="Tools" 
-        component={ToolsScreen} 
-        options={{ 
-          title: 'Araçlar',
-          headerTitle: 'Öğrenci Araçları'
-        }} 
+      <Tab.Screen
+        name="VideoCall"
+        component={VideoCallTabScreen}
+        options={{
+          title: 'Video',
+          tabBarIcon: ({ color }) => (
+            <View style={styles.tabIcon}>
+              <View style={[styles.videoIcon, { backgroundColor: color }]} />
+            </View>
+          ),
+        }}
       />
     </Tab.Navigator>
-  )
-}
+  );
+};
+
+const AuthenticatedApp: React.FC = () => {
+  const { userProfile } = useAuth();
+  const { videoCall } = useStream();
+  const [studentSelected, setStudentSelected] = useState(false);
+  const navigationRef = useRef<NavigationContainerRef<any>>(null);
+
+  // Debug: Log student selection state
+  useEffect(() => {
+    console.log('🎯 [NAVIGATOR] Student selected state:', studentSelected);
+  }, [studentSelected]);
+
+  // Auto-navigate to VideoCall tab when a call becomes active
+  useEffect(() => {
+    if (videoCall && navigationRef.current) {
+      console.log('🎯 [NAVIGATOR] Active call detected, navigating to VideoCall tab');
+      navigationRef.current.navigate('VideoCall' as never);
+    }
+  }, [videoCall]);
+
+  // Show main content based on user role
+  const renderMainContent = () => {
+    // For students, go directly to main tabs
+    if (userProfile?.role === 'student') {
+      return (
+        <NavigationContainer ref={navigationRef}>
+          <MainTabs />
+        </NavigationContainer>
+      );
+    }
+
+    // For coaches, check if a student is selected
+    if (userProfile?.role === 'coach') {
+      if (!studentSelected) {
+        return (
+          <CoachStudentSelectionScreen
+            onStudentSelected={() => {
+              console.log('🎯 [NAVIGATOR] onStudentSelected callback triggered');
+              setStudentSelected(true);
+              console.log('🎯 [NAVIGATOR] Student selected state set to true');
+            }}
+          />
+        );
+      }
+
+      return (
+        <NavigationContainer ref={navigationRef}>
+          <MainTabs />
+        </NavigationContainer>
+      );
+    }
+
+    // For other roles or undefined role, show main tabs
+    return (
+      <NavigationContainer ref={navigationRef}>
+        <MainTabs />
+      </NavigationContainer>
+    );
+  };
+
+  return renderMainContent();
+};
+
+export const AppNavigator: React.FC = () => {
+  const { isAuthenticated, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#3B82F6" />
+      </View>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <LoginScreen />;
+  }
+
+  return (
+    <CoachStudentProvider>
+      <AuthenticatedApp />
+    </CoachStudentProvider>
+  );
+};
 
 const styles = StyleSheet.create({
-  chatContainer: {
+  loadingContainer: {
     flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: '#F9FAFB',
   },
-  chatHeader: {
-    backgroundColor: '#3B82F6',
-    paddingTop: 44,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
+  tabIcon: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 24,
+    height: 24,
   },
-  chatHeaderTitle: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
+  homeIcon: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
   },
-}) 
+  chatIcon: {
+    width: 20,
+    height: 16,
+    borderRadius: 8,
+  },
+  videoIcon: {
+    width: 20,
+    height: 14,
+    borderRadius: 2,
+  },
+}); 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,59 +6,52 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
-  Image,
-} from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
-import { useAuth } from '../contexts/AuthContext'
+} from 'react-native';
+import { useAuth } from '../contexts/AuthContext';
 
-export default function LoginScreen() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const { signIn } = useAuth()
+export const LoginScreen: React.FC = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const { signIn } = useAuth();
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Hata', 'Lütfen e-posta ve şifrenizi girin')
-      return
+      Alert.alert('Hata', 'Lütfen email ve şifrenizi girin');
+      return;
     }
 
-    setLoading(true)
-    try {
-      await signIn(email, password)
-    } catch (error: any) {
-      Alert.alert('Giriş Hatası', error.message || 'Giriş yapılırken bir hata oluştu')
-    } finally {
-      setLoading(false)
+    setLoading(true);
+    const { error } = await signIn(email, password);
+    setLoading(false);
+
+    if (error) {
+      Alert.alert('Giriş Hatası', error.message);
     }
-  }
+  };
 
   return (
     <KeyboardAvoidingView 
       style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <View style={styles.content}>
         <View style={styles.header}>
-          <View style={styles.logoContainer}>
-            <Ionicons name="school" size={64} color="#3B82F6" />
-          </View>
-          <Text style={styles.title}>ÖZGÜN Koçluk</Text>
-          <Text style={styles.subtitle}>Öğrenci Mobil Uygulaması</Text>
+          <Text style={styles.title}>Koçluk Uygulaması</Text>
+          <Text style={styles.subtitle}>Hesabınıza giriş yapın</Text>
         </View>
 
         <View style={styles.form}>
           <View style={styles.inputContainer}>
-            <Ionicons name="mail-outline" size={20} color="#6B7280" style={styles.inputIcon} />
+            <Text style={styles.label}>Email</Text>
             <TextInput
               style={styles.input}
-              placeholder="E-posta adresinizi girin"
               value={email}
               onChangeText={setEmail}
+              placeholder="Email adresinizi girin"
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
@@ -66,71 +59,46 @@ export default function LoginScreen() {
           </View>
 
           <View style={styles.inputContainer}>
-            <Ionicons name="lock-closed-outline" size={20} color="#6B7280" style={styles.inputIcon} />
+            <Text style={styles.label}>Şifre</Text>
             <TextInput
-              style={[styles.input, { paddingRight: 50 }]}
-              placeholder="Şifrenizi girin"
+              style={styles.input}
               value={password}
               onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              autoCapitalize="none"
-              autoCorrect={false}
+              placeholder="Şifrenizi girin"
+              secureTextEntry
             />
-            <TouchableOpacity
-              style={styles.passwordToggle}
-              onPress={() => setShowPassword(!showPassword)}
-            >
-              <Ionicons
-                name={showPassword ? "eye-off-outline" : "eye-outline"}
-                size={20}
-                color="#6B7280"
-              />
-            </TouchableOpacity>
           </View>
 
           <TouchableOpacity
-            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+            style={styles.loginButton}
             onPress={handleLogin}
             disabled={loading}
           >
-            <Text style={styles.loginButtonText}>
-              {loading ? 'Giriş Yapılıyor...' : 'Giriş Yap'}
-            </Text>
+            {loading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.loginButtonText}>Giriş Yap</Text>
+            )}
           </TouchableOpacity>
         </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            © 2024 ÖZGÜN Koçluk Sistemi. Tüm hakları saklıdır.
-          </Text>
-        </View>
-      </ScrollView>
+      </View>
     </KeyboardAvoidingView>
-  )
-}
+  );
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9FAFB',
   },
-  scrollContainer: {
-    flexGrow: 1,
+  content: {
+    flex: 1,
     justifyContent: 'center',
-    padding: 24,
+    paddingHorizontal: 32,
   },
   header: {
-    alignItems: 'center',
     marginBottom: 40,
-  },
-  logoContainer: {
-    width: 100,
-    height: 100,
-    backgroundColor: '#EBF4FF',
-    borderRadius: 50,
-    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
   },
   title: {
     fontSize: 28,
@@ -143,56 +111,37 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   form: {
-    marginBottom: 40,
+    width: '100%',
   },
   inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    marginBottom: 20,
   },
-  inputIcon: {
-    marginRight: 12,
+  label: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
   },
   input: {
-    flex: 1,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     fontSize: 16,
     color: '#1F2937',
   },
-  passwordToggle: {
-    position: 'absolute',
-    right: 16,
-    padding: 4,
-  },
   loginButton: {
     backgroundColor: '#3B82F6',
-    borderRadius: 12,
+    borderRadius: 8,
     paddingVertical: 16,
     alignItems: 'center',
-    marginTop: 8,
-  },
-  loginButtonDisabled: {
-    backgroundColor: '#9CA3AF',
+    marginTop: 16,
   },
   loginButtonText: {
-    color: '#FFFFFF',
+    color: 'white',
     fontSize: 16,
     fontWeight: '600',
   },
-  footer: {
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: 12,
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-}) 
+}); 

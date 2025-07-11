@@ -1,109 +1,127 @@
-import { StreamChat } from 'stream-chat'
+import { StreamVideoClient } from '@stream-io/video-react-native-sdk';
+import { StreamChat } from 'stream-chat';
 
-// Stream.io configuration - matching web app
-export const STREAM_CONFIG = {
-  API_KEY: process.env.EXPO_PUBLIC_STREAM_API_KEY || 'demo_key',
-}
+// Stream.io configuration
+const STREAM_CONFIG = {
+  API_KEY: process.env.EXPO_PUBLIC_STREAM_API_KEY || 'mmhfdzb5evj2', // fallback to demo key
+  API_URL: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000',
+};
+
+export const isDemoMode = () => {
+  return STREAM_CONFIG.API_KEY === 'mmhfdzb5evj2';
+};
+
+// Generate user token from your backend
+export const generateUserToken = async (userId: string): Promise<string> => {
+  if (isDemoMode()) {
+    console.warn('⚠️ Using demo Stream.io setup. Configure API keys for production.');
+    return `demo_token_${userId}`;
+  }
+  
+  try {
+    const response = await fetch(`${STREAM_CONFIG.API_URL}/api/stream/token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Token generation failed: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    if (!data.success || !data.token) {
+      throw new Error('Invalid token response');
+    }
+    
+    return data.token;
+  } catch (error) {
+    console.error('❌ Failed to generate Stream token:', error);
+    throw new Error('Failed to generate authentication token');
+  }
+};
+
+// Create Stream Video client
+export const createStreamVideoClient = (user: { id: string; name: string }, token: string): StreamVideoClient => {
+  return new StreamVideoClient({
+    apiKey: STREAM_CONFIG.API_KEY,
+    user,
+    token,
+  });
+};
 
 // Create Stream Chat client
-export const createStreamChatClient = () => {
-  return StreamChat.getInstance(STREAM_CONFIG.API_KEY)
-}
-
-// Generate user token by calling the web app's API
-export const generateUserToken = async (userId: string): Promise<string> => {
-  // First check if we're in demo mode
-  if (StreamUtils.isDemoMode()) {
-    console.warn('⚠️ Using demo Stream.io setup. Configure API keys for production.')
-    return `demo_token_${userId}_${Date.now()}`
+export const createStreamChatClient = async (user: { id: string; name: string }, token: string): Promise<StreamChat> => {
+  console.log('🔍 Creating Stream Chat client for user:', user.id);
+  
+  try {
+    const client = StreamChat.getInstance(STREAM_CONFIG.API_KEY);
+    await client.connectUser(user, token);
+    console.log('✅ Stream Chat client created successfully');
+    
+    return client;
+  } catch (error) {
+    console.error('❌ Error creating Stream Chat client:', error);
+    throw error;
   }
+};
 
-  // Try different endpoints for token generation
-  const endpoints = [
-    'https://ozgun-v13.vercel.app/api/stream/token',  // Production Vercel app
-    'http://localhost:3000/api/stream/token',  // Local development
-    'http://192.168.1.15:3000/api/stream/token', // Local network (adjust IP as needed)
-    'http://10.0.2.2:3000/api/stream/token',   // Android emulator
-  ]
+// Create a video call between coach and student
+export const createVideoCallId = (coachId: string, studentId: string): string => {
+  // Create a unique but short call ID for the coach-student pair
+  const shortCoachId = coachId.substring(0, 8);
+  const shortStudentId = studentId.substring(0, 8);
+  return `call-${[shortCoachId, shortStudentId].sort().join('-')}`;
+};
 
-  for (const endpoint of endpoints) {
-    try {
-      console.log(`🔄 Trying token endpoint: ${endpoint}`)
-      
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId }),
-      })
-      
-      if (!response.ok) {
-        console.log(`❌ Endpoint ${endpoint} failed: ${response.status}`)
-        continue
-      }
-      
-      const data = await response.json()
-      
-      if (!data.success || !data.token) {
-        console.log(`❌ Endpoint ${endpoint} returned invalid response`)
-        continue
-      }
-      
-      console.log(`✅ Token generated successfully from ${endpoint}`)
-      return data.token
-      
-    } catch (error: any) {
-      console.log(`❌ Endpoint ${endpoint} error:`, error.message || error)
-      continue
-    }
+// Create a chat channel between coach and student
+export const createChatChannelId = (coachId: string, studentId: string): string => {
+  // Create a consistent channel ID regardless of who creates it
+  // Use first 8 characters of each UUID to stay under 64 char limit
+  // Use same format as web version: cs- prefix
+  const shortCoachId = coachId.substring(0, 8);
+  const shortStudentId = studentId.substring(0, 8);
+  return `cs-${[shortCoachId, shortStudentId].sort().join('-')}`;
+};
+
+// Create or get a chat channel
+export const createChatChannel = async (chatClient: StreamChat, coachId: string, studentId: string, coachName: string, studentName: string) => {
+  const channelId = createChatChannelId(coachId, studentId);
+  console.log('🔍 Creating chat channel:', channelId);
+  
+  try {
+    const channel = chatClient.channel('messaging', channelId, {
+      members: [coachId, studentId],
+    });
+    
+    // Create the channel first (this actually creates it in Stream's system)
+    await channel.create();
+    console.log('✅ Channel created in Stream system');
+    
+    // Then watch the channel and load message history
+    await channel.watch({ 
+      messages: { limit: 50 }, // Load last 50 messages
+      members: { limit: 100 },
+      watchers: { limit: 100 }
+    });
+    
+    console.log('✅ Chat channel created successfully');
+    console.log('📝 Channel message count:', channel.state.messages.length);
+    
+    return channel;
+  } catch (error) {
+    console.error('❌ Error creating chat channel:', error);
+    throw error;
   }
-  
-  // If all endpoints fail, throw error with helpful message
-  throw new Error(
-    'Failed to generate authentication token. Please ensure:\n' +
-    '1. Web app is running (npm run dev in v13-21 folder)\n' +
-    '2. Check your network connection\n' +
-    '3. For physical devices, update the IP address in stream.ts'
-  )
-}
+};
 
-// Helper function to create a chat channel between coach and student
-export const createCoachStudentChannel = (chatClient: StreamChat, coachId: string, studentId: string) => {
-  // Create a unique but short channel ID for the coach-student pair
-  const shortCoachId = coachId.substring(0, 8)
-  const shortStudentId = studentId.substring(0, 8)
-  const channelId = `cs-${[shortCoachId, shortStudentId].sort().join('-')}`
-  
-  return chatClient.channel('messaging', channelId, {
-    members: [coachId, studentId],
-    created_by_id: coachId,
-  })
-}
+// Format user for Stream.io
+export const formatStreamUser = (user: { id: string; full_name: string; email: string }) => ({
+  id: user.id,
+  name: user.full_name,
+  email: user.email,
+  role: 'user',
+});
 
-// Stream.io utility functions
-export const StreamUtils = {
-  // Format user for Stream.io
-  formatStreamUser: (user: { id: string; full_name?: string; email: string }) => ({
-    id: user.id,
-    name: user.full_name || user.email.split('@')[0],
-    email: user.email,
-    role: 'user',
-  }),
-  
-  // Check if Stream.io is properly configured
-  isConfigured: () => {
-    return STREAM_CONFIG.API_KEY && STREAM_CONFIG.API_KEY !== 'demo_key'
-  },
-  
-  // Get demo mode status
-  isDemoMode: () => {
-    return STREAM_CONFIG.API_KEY === 'demo_key'
-  }
-}
-
-export default {
-  STREAM_CONFIG,
-  createStreamChatClient,
-  generateUserToken,
-  createCoachStudentChannel,
-  StreamUtils,
-} 
+export { STREAM_CONFIG }; 

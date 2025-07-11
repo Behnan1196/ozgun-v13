@@ -1,0 +1,21 @@
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.mapReadToStorable = void 0;
+var _mapDateTimeToStorable = require("./mapDateTimeToStorable");
+var mapReadToStorable = exports.mapReadToStorable = function mapReadToStorable(_ref) {
+  var cid = _ref.cid,
+    read = _ref.read;
+  var last_read = read.last_read,
+    unread_messages = read.unread_messages,
+    user = read.user,
+    last_read_message_id = read.last_read_message_id;
+  return {
+    cid: cid,
+    lastRead: (0, _mapDateTimeToStorable.mapDateTimeToStorable)(last_read),
+    lastReadMessageId: last_read_message_id,
+    unreadMessages: unread_messages,
+    userId: user == null ? void 0 : user.id
+  };
+};
+//# sourceMappingURL=mapReadToStorable.js.map

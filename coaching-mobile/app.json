@@ -2,63 +2,59 @@
   "expo": {
     "name": "Coaching Mobile",
     "slug": "coaching-mobile",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "scheme": "myapp",
-    "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.behnan.coachingmobile",
       "infoPlist": {
-        "UIBackgroundModes": [
-          "remote-notification",
-          "background-fetch",
-          "remote-notification",
-          "background-fetch"
-        ],
+        "NSCameraUsageDescription": "This app needs access to camera for video calls with your coach",
+        "NSMicrophoneUsageDescription": "This app needs access to microphone for voice calls with your coach",
         "ITSAppUsesNonExemptEncryption": false
       },
-      "bundleIdentifier": "com.behnan.coachingmobile"
+      "entitlements": {
+        "aps-environment": "development"
+      }
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
+      "versionCode": 2,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.CHANGE_NETWORK_STATE",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.WAKE_LOCK",
+        "android.permission.BLUETOOTH",
+        "android.permission.BLUETOOTH_ADMIN",
+        "android.permission.BLUETOOTH_CONNECT"
+      ],
       "package": "com.behnan.coachingmobile"
     },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/favicon.png"
-    },
     "plugins": [
-      "expo-router",
+      "expo-av",
+      "expo-secure-store",
       [
         "expo-notifications",
         {
-          "defaultChannel": "default",
-          "enableBackgroundRemoteNotifications": true
+          "color": "#3B82F6",
+          "sounds": []
         }
       ]
     ],
     "notification": {
-      "iosDisplayInForeground": true,
-      "androidMode": "default"
+      "color": "#3B82F6"
     },
-    "experiments": {
-      "typedRoutes": true
-    },
+    "sdkVersion": "53.0.0",
     "extra": {
-      "router": {},
       "eas": {
-        "projectId": "bfda1a33-d424-49b0-81d4-4ad0c0f8c04c"
+        "projectId": "7cd95625-11cc-40e0-967a-f09e46a57e58"
       }
-    }
+    },
+    "owner": "behnan"
   }
 }

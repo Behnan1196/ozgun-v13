@@ -1,0 +1,47 @@
+import React, { PropsWithChildren } from 'react';
+import type { ChannelState } from 'stream-chat';
+export type PaginatedMessageListContextValue = {
+    /**
+     * Load latest messages
+     * @returns Promise<void>
+     */
+    loadLatestMessages: () => Promise<void>;
+    /**
+     * Load more messages
+     */
+    loadMore: (limit?: number) => Promise<void>;
+    /**
+     * Load more recent messages
+     */
+    loadMoreRecent: (limit?: number) => Promise<void>;
+    /**
+     * Messages from client state
+     */
+    messages: ChannelState['messages'];
+    /**
+     * Has more messages to load
+     */
+    hasMore?: boolean;
+    /**
+     * Is loading more messages
+     */
+    loadingMore?: boolean;
+    /**
+     * Is loading more recent messages
+     */
+    loadingMoreRecent?: boolean;
+    /**
+     * Set loadingMore
+     */
+    setLoadingMore?: (loadingMore: boolean) => void;
+    /**
+     * Set loadingMoreRecent
+     */
+    setLoadingMoreRecent?: (loadingMoreRecent: boolean) => void;
+};
+export declare const PaginatedMessageListContext: React.Context<PaginatedMessageListContextValue>;
+export declare const PaginatedMessageListProvider: ({ children, value, }: PropsWithChildren<{
+    value?: PaginatedMessageListContextValue;
+}>) => React.JSX.Element;
+export declare const usePaginatedMessageListContext: () => PaginatedMessageListContextValue;
+//# sourceMappingURL=PaginatedMessageListContext.d.ts.map

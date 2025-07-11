@@ -1,0 +1,3 @@
+import type { MessageContextValue } from '../../../contexts/messageContext/MessageContext';
+export declare const useCreateMessageContext: ({ actionsEnabled, alignment, channel, dismissOverlay, files, goToMessage, groupStyles, handleAction, handleReaction, handleToggleReaction, hasReactions, images, isEditedMessageOpen, isMessageAIGenerated, isMyMessage, lastGroupMessage, lastReceivedId, members, message, messageContentOrder, myMessageTheme, onLongPress, onlyEmojis, onOpenThread, onPress, onPressIn, otherAttachments, preventPress, reactions, readBy, setIsEditedMessageOpen, showAvatar, showMessageOverlay, showMessageStatus, threadList, videos, setQuotedMessage, }: MessageContextValue) => MessageContextValue;
+//# sourceMappingURL=useCreateMessageContext.d.ts.map
